@@ -1,0 +1,79 @@
+Resources:
+  UiSourceBucketD8735D7B:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: ui-host-bucket
+      VersioningConfiguration:
+        Status: Enabled
+      WebsiteConfiguration:
+        ErrorDocument: 404.html
+        IndexDocument: index.html
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: UiInfrastructure/UiSourceBucket/Resource
+  RewritePathF1E14787:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: us-east-1UiInfrastructureRewritePathEA17BA81
+      AutoPublish: true
+      FunctionCode: |-
+        function (event) {
+            var request = event.request;
+            var oldUri = request.uri;
+            var newUri = oldUri.replace(/\/$/, '/index.html');
+            request.uri = newUri;
+            return request;
+        }
+      FunctionConfig:
+        Comment: us-east-1UiInfrastructureRewritePathEA17BA81
+        Runtime: cloudfront-js-1.0
+    Metadata:
+      aws:cdk:path: UiInfrastructure/RewritePath/Resource
+  UiDistC3E64E28:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN:
+                Fn::GetAtt:
+                  - RewritePathF1E14787
+                  - FunctionARN
+          TargetOriginId: UiInfrastructureUiDistOrigin18A9C4E67
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - CustomOriginConfig:
+              OriginProtocolPolicy: http-only
+              OriginSSLProtocols:
+                - TLSv1.2
+            DomainName:
+              Fn::Select:
+                - 2
+                - Fn::Split:
+                    - /
+                    - Fn::GetAtt:
+                        - UiSourceBucketD8735D7B
+                        - WebsiteURL
+            Id: UiInfrastructureUiDistOrigin18A9C4E67
+        PriceClass: PriceClass_100
+    Metadata:
+      aws:cdk:path: UiInfrastructure/UiDist/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/02OzQrCMBCEn8V7ujX+4FWs+AD1CepmC2l1F5KsHkLe3daieJoZvmEYC3ZzgPXq2L1ihW6sM0ogyNfU4Wga4ZiCYjJNzy1F0YBUzNzNcQv5pDjSBy6uGLyLuj4IJ8gXZUxeeOY/f/bTor/pF/znUophcQRDrJ92B3Y/PRui91VQTv5B0C76BtbYoSW2AAAA
+    Metadata:
+      aws:cdk:path: UiInfrastructure/CDKMetadata/Default
+
